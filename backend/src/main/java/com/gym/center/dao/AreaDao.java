@@ -30,6 +30,12 @@ public class AreaDao {
         return rows.isEmpty() ? null : rows.get(0);
     }
 
+    /** 开体验单时锁住这一行，同一个训练区的开单排队走，在馆人头才数得准。 */
+    public Map<String, Object> lockOne(long id) {
+        List<Map<String, Object>> rows = jdbc.queryForList(BASE + " where id = ? for update", id);
+        return rows.isEmpty() ? null : rows.get(0);
+    }
+
     public Map<String, Object> byCode(String code) {
         List<Map<String, Object>> rows = jdbc.queryForList(BASE + " where area_code = ?", code);
         return rows.isEmpty() ? null : rows.get(0);

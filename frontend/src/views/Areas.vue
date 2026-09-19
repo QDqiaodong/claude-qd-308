@@ -10,6 +10,7 @@
           <div class="num"><b>{{ a.floorSize ?? '-' }}</b><span>平方米</span></div>
           <div class="num"><b>{{ a.capacity ?? '-' }}</b><span>可容纳</span></div>
           <div class="num"><b>{{ countOf(a.id) }}</b><span>器械</span></div>
+          <div class="num"><b :class="{ over: overCap(a.id) }">{{ headOf(a.id) }}</b><span>在馆人头</span></div>
         </div>
       </article>
     </div>
@@ -28,19 +29,29 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { areaApi, machineApi } from '../api'
+import { areaApi, machineApi, visitApi } from '../api'
 
 const items = ref([])
 const machines = ref([])
+const board = ref([])
 const dialog = ref(false)
 const form = ref({})
 
 function countOf(id) {
   return machines.value.filter((m) => m.areaId === id).length
 }
+function headOf(id) {
+  const b = board.value.find((x) => x.id === id)
+  return b ? b.headcount : 0
+}
+function overCap(id) {
+  const b = board.value.find((x) => x.id === id)
+  return !!(b && b.capacity && b.headcount >= b.capacity)
+}
 async function load() {
   items.value = await areaApi.list()
   machines.value = await machineApi.list()
+  board.value = await visitApi.board()
 }
 function openNew() {
   form.value = { areaState: '开放' }
@@ -77,6 +88,7 @@ onMounted(load)
 .b-name { font-size: 18px; font-weight: 600; margin: 12px 0 18px; }
 .b-nums { display: flex; gap: 24px; }
 .num b { display: block; font-size: 21px; color: var(--el-color-primary-dark-2); }
+.num b.over { color: #c0392b; }
 .num span { font-size: 11px; color: #a2958f; }
 .fr { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .fr label { width: 76px; text-align: right; font-size: 13px; color: #6d625c; }

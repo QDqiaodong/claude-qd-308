@@ -30,5 +30,13 @@ export const areaApi = build('/areas')
 export const machineApi = build('/machines')
 export const gymClassApi = build('/classes')
 export const memberApi = build('/members')
+export const lockerApi = build('/lockers')
+
+export const visitApi = {
+  ...build('/visits'),
+  board: () => call('/visits/board'),
+  returnKey: (id) => call(`/visits/${id}/key`, { method: 'PUT' }),
+  leave: (id) => call(`/visits/${id}/leave`, { method: 'PUT' })
+}
 
 export default call

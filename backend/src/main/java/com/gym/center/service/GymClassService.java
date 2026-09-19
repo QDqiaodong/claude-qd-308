@@ -4,6 +4,7 @@ import static com.gym.center.service.AreaService.intOrNull;
 import static com.gym.center.service.AreaService.num;
 import static com.gym.center.service.AreaService.str;
 
+import com.gym.center.dao.AreaDao;
 import com.gym.center.dao.GymClassDao;
 import com.gym.center.dto.BizException;
 import java.util.List;
@@ -16,9 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class GymClassService {
 
     private final GymClassDao dao;
+    private final AreaDao areas;
 
-    public GymClassService(GymClassDao dao) {
+    public GymClassService(GymClassDao dao, AreaDao areas) {
         this.dao = dao;
+        this.areas = areas;
     }
 
     public List<Map<String, Object>> list(String state, String keyword) {
@@ -51,12 +54,35 @@ public class GymClassService {
         String coach = orDefault(form, existed, "coachName");
         String date = orDefault(form, existed, "classDate");
         String start = orDefault(form, existed, "startTime");
+        String end = orDefault(form, existed, "endTime");
         String state = orDefault(form, existed, "classState");
         if (state == null) {
             state = "待开课";
         }
         if (name == null || date == null) {
             throw new BizException("课程名称和日期都得填");
+        }
+        if (start != null && !start.matches("^([01]\\d|2[0-3]):[0-5]\\d$")) {
+            throw new BizException("上课时间按 24 小时补零写，比如 09:00、19:00");
+        }
+        if (end != null && !end.matches("^([01]\\d|2[0-3]):[0-5]\\d$")) {
+            throw new BizException("下课时间按 24 小时补零写，比如 10:00、19:45");
+        }
+        if (start != null && end != null && end.compareTo(start) <= 0) {
+            throw new BizException("下课时间得晚于上课时间");
+        }
+        Long areaId = num(form.get("areaId"));
+        if (areaId == null && existed != null) {
+            areaId = num(existed.get("areaId"));
+        }
+        if (areaId != null) {
+            Map<String, Object> area = areas.one(areaId);
+            if (area == null) {
+                throw new BizException("上课的训练区不存在");
+            }
+            if ("停用".equals(area.get("areaState"))) {
+                throw new BizException("训练区「" + area.get("areaName") + "」停用了，课不能排在里面");
+            }
         }
         Integer total = intOrNull(form.get("seatTotal"));
         if (total == null && existed != null) {
@@ -76,10 +102,10 @@ public class GymClassService {
             throw new BizException("已报名 " + used + " 人，超过了 " + total + " 个名额");
         }
         if (existed == null) {
-            dao.insert(code, name, coach, date, start, total == null ? 0 : total,
+            dao.insert(code, name, coach, date, start, end, areaId, total == null ? 0 : total,
                     used == null ? 0 : used, state);
         } else {
-            dao.update(id, name, coach, date, start, total, used, state);
+            dao.update(id, name, coach, date, start, end, areaId, total, used, state);
         }
         return dao.byCode(code);
     }
