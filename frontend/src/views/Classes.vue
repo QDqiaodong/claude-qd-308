@@ -9,6 +9,7 @@
           <span class="c-code">{{ c.classCode }}</span>
           <span class="c-name">{{ c.className }}</span>
           <span class="c-coach">{{ c.coachName || '未排教练' }}</span>
+          <span class="c-area">{{ c.areaName || '未分区' }}</span>
           <span class="c-time">{{ c.startTime || '待定' }}</span>
           <div class="c-seat">
             <div class="seat-bar"><div class="seat-fill" :style="{ width: seatPct(c) + '%' }"></div></div>
@@ -25,6 +26,10 @@
       <div class="fr"><label>课程编号</label><el-input v-model="form.classCode" /></div>
       <div class="fr"><label>课程名</label><el-input v-model="form.className" /></div>
       <div class="fr"><label>教练</label><el-input v-model="form.coachName" /></div>
+      <div class="fr"><label>训练区</label>
+        <el-select v-model="form.areaId" clearable placeholder="不指定就不算进任何区的人头" style="flex:1">
+          <el-option v-for="a in areas" :key="a.id" :value="a.id" :label="a.areaName" />
+        </el-select></div>
       <div class="fr"><label>日期</label><el-input v-model="form.classDate" placeholder="2026-09-19" /></div>
       <div class="fr"><label>开始时间</label><el-input v-model="form.startTime" placeholder="19:00" /></div>
       <div class="fr"><label>名额</label><el-input v-model="form.seatTotal" /></div>
@@ -37,9 +42,10 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { gymClassApi } from '../api'
+import { areaApi, gymClassApi } from '../api'
 
 const items = ref([])
+const areas = ref([])
 const dialog = ref(false)
 const form = ref({})
 
@@ -56,6 +62,7 @@ function seatPct(c) {
 }
 async function load() {
   items.value = await gymClassApi.list()
+  areas.value = await areaApi.list()
 }
 function openNew() {
   form.value = {}
@@ -89,10 +96,11 @@ onMounted(load)
 .day-bar { position: sticky; top: 0; background: var(--el-color-primary-light-9); color: var(--el-color-primary-dark-2);
   font-weight: 600; font-size: 13px; padding: 9px 12px; margin: 10px -16px 4px; }
 .day-bar small { color: #b09b93; font-weight: 400; margin-left: 6px; }
-.c-row { display: grid; grid-template-columns: 96px 1.2fr 96px 80px 160px 90px 80px; gap: 8px;
+.c-row { display: grid; grid-template-columns: 96px 1.2fr 96px 90px 80px 160px 90px 80px; gap: 8px;
   align-items: center; padding: 11px 12px; border-bottom: 1px solid #f6f2f0; font-size: 13px; }
 .c-code { font-family: ui-monospace, Menlo, monospace; color: #a2958f; font-size: 12px; }
 .c-coach { color: #7c6f68; font-size: 12px; }
+.c-area { color: #7c6f68; font-size: 12px; }
 .c-time { color: #a2958f; font-size: 12px; }
 .c-seat { display: flex; align-items: center; gap: 8px; }
 .seat-bar { flex: 1; height: 7px; background: #f4efec; border-radius: 4px; overflow: hidden; }

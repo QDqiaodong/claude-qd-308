@@ -35,6 +35,12 @@ public class AreaDao {
         return rows.isEmpty() ? null : rows.get(0);
     }
 
+    /** 开入场单时锁住这一行，同一训练区的单一张张来，容纳人数才不会超。 */
+    public Map<String, Object> oneForUpdate(long id) {
+        List<Map<String, Object>> rows = jdbc.queryForList(BASE + " where id = ? for update", id);
+        return rows.isEmpty() ? null : rows.get(0);
+    }
+
     public int insert(String code, String name, Integer size, Integer capacity, String state) {
         return jdbc.update("insert into gym_area (area_code, area_name, floor_size, capacity, area_state)"
                 + " values (?, ?, ?, ?, ?)", code, name, size, capacity, state);

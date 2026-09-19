@@ -30,5 +30,12 @@ export const areaApi = build('/areas')
 export const machineApi = build('/machines')
 export const gymClassApi = build('/classes')
 export const memberApi = build('/members')
+export const lockerApi = build('/lockers')
+export const trialTicketApi = {
+  ...build('/trial-tickets'),
+  board: () => call('/trial-tickets/board'),
+  returnKey: (id) => call(`/trial-tickets/${id}/key`, { method: 'POST' }),
+  leave: (id) => call(`/trial-tickets/${id}/leave`, { method: 'POST' })
+}
 
 export default call

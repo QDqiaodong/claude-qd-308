@@ -1,6 +1,6 @@
 <template>
   <div class="pane">
-    <header class="hd"><h2>训练区</h2><span class="sub">大卡里挂着两个数字块，下面小字是里面摆了几台器械</span>
+    <header class="hd"><h2>训练区</h2><span class="sub">数字块里「在馆」是体验客加同时段团课的人头，停用区里没走完的人也算着</span>
       <button class="prime" @click="openNew">新增训练区</button></header>
     <div class="big-cards">
       <article v-for="a in items" :key="a.id" class="big" @click="openEdit(a)">
@@ -9,6 +9,7 @@
         <div class="b-nums">
           <div class="num"><b>{{ a.floorSize ?? '-' }}</b><span>平方米</span></div>
           <div class="num"><b>{{ a.capacity ?? '-' }}</b><span>可容纳</span></div>
+          <div class="num"><b>{{ inGymOf(a.id) }}</b><span>在馆</span></div>
           <div class="num"><b>{{ countOf(a.id) }}</b><span>器械</span></div>
         </div>
       </article>
@@ -28,19 +29,25 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { areaApi, machineApi } from '../api'
+import { areaApi, machineApi, trialTicketApi } from '../api'
 
 const items = ref([])
 const machines = ref([])
+const board = ref([])
 const dialog = ref(false)
 const form = ref({})
 
 function countOf(id) {
   return machines.value.filter((m) => m.areaId === id).length
 }
+function inGymOf(id) {
+  const z = board.value.find((b) => b.areaId === id)
+  return z ? z.inGym + z.classSeats : 0
+}
 async function load() {
   items.value = await areaApi.list()
   machines.value = await machineApi.list()
+  board.value = await trialTicketApi.board()
 }
 function openNew() {
   form.value = { areaState: '开放' }

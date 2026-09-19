@@ -4,6 +4,7 @@ import static com.gym.center.service.AreaService.intOrNull;
 import static com.gym.center.service.AreaService.num;
 import static com.gym.center.service.AreaService.str;
 
+import com.gym.center.dao.AreaDao;
 import com.gym.center.dao.GymClassDao;
 import com.gym.center.dto.BizException;
 import java.util.List;
@@ -11,14 +12,16 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 团课：名额是硬的，报满了就不能再加人。 */
+/** 团课：名额是硬的，报满了就不能再加人；课挂在训练区上，报名数要算进那个区的在馆人头。 */
 @Service
 public class GymClassService {
 
     private final GymClassDao dao;
+    private final AreaDao areas;
 
-    public GymClassService(GymClassDao dao) {
+    public GymClassService(GymClassDao dao, AreaDao areas) {
         this.dao = dao;
+        this.areas = areas;
     }
 
     public List<Map<String, Object>> list(String state, String keyword) {
@@ -58,6 +61,19 @@ public class GymClassService {
         if (name == null || date == null) {
             throw new BizException("课程名称和日期都得填");
         }
+        Long areaId = num(form.get("areaId"));
+        if (areaId == null && existed != null) {
+            areaId = num(existed.get("areaId"));
+        }
+        if (areaId != null) {
+            Map<String, Object> area = areas.one(areaId);
+            if (area == null) {
+                throw new BizException("要排课的训练区不存在");
+            }
+            if ("停用".equals(area.get("areaState"))) {
+                throw new BizException("训练区「" + area.get("areaName") + "」停用了，课不能排进去");
+            }
+        }
         Integer total = intOrNull(form.get("seatTotal"));
         if (total == null && existed != null) {
             total = intOrNull(existed.get("seatTotal"));
@@ -76,10 +92,10 @@ public class GymClassService {
             throw new BizException("已报名 " + used + " 人，超过了 " + total + " 个名额");
         }
         if (existed == null) {
-            dao.insert(code, name, coach, date, start, total == null ? 0 : total,
+            dao.insert(code, name, coach, date, start, areaId, total == null ? 0 : total,
                     used == null ? 0 : used, state);
         } else {
-            dao.update(id, name, coach, date, start, total, used, state);
+            dao.update(id, name, coach, date, start, areaId, total, used, state);
         }
         return dao.byCode(code);
     }
